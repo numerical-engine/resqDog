@@ -22,6 +22,6 @@ class SteepestGradientDescent(Optimizer):
         super().__init__(objective, objective_w, penalty, penalty_w)
         self.alpha = alpha
 
-    def step(self, x:np.ndarray)->tuple[np.ndarray]:
+    def step(self, x:np.ndarray)->np.ndarray:
         g = self.grad(x)
         return x - self.alpha*g

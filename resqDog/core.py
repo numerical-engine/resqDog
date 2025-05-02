@@ -53,6 +53,7 @@ class Function:
         
         return np.array(g)
 
+
 class PenaltyFunction(Function):
     """ペナルティ関数用のクラス
 
