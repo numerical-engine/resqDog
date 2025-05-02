@@ -39,6 +39,14 @@ class ConjugateGradient(SteepestGradientDescent):
         alpha (float): 緩和係数。
     """
     def step(self, x:np.ndarray, d:np.ndarray = None)->tuple[np.ndarray]:
+        """解を更新
+
+        Args:
+            x (np.ndarray): 入力
+            d (np.ndarray, optional): 進行方向。1反復計算目はNone。詳しくは書籍参照。
+        Returns:
+            tuple[np.ndarray]: 新しい候補解と新しい進行方向。
+        """
         g = self.grad(x)
         if d is None:
             d = -g
@@ -61,6 +69,14 @@ class BFGS(SteepestGradientDescent):
         alpha (float): 緩和係数。
     """
     def step(self, x:np.ndarray, B:np.ndarray = None)->tuple[np.ndarray]:
+        """解を更新
+
+        Args:
+            x (np.ndarray): 候補解
+            B (np.ndarray, optional): BFGS行列。詳しくは書籍参照。
+        Returns:
+            tuple[np.ndarray]: 新しい候補解と新しいBFGS行列。
+        """
         if B is None: B = np.eye(len(x))
 
         B_inv = np.linalg.pinv(B) #逆行列を計算。数値誤差対策でpinvを使用。
@@ -78,7 +94,7 @@ class BFGS(SteepestGradientDescent):
 
 
 class LBFGS(BFGS):
-    """最急降下法
+    """記憶制限付きBFGS
 
     Attributes:
         objective (list[Function]): 目的関数のリスト。
@@ -103,6 +119,17 @@ class LBFGS(BFGS):
             s:np.ndarray = None,
             y:np.ndarray = None,
             c:np.ndarray = None,)->tuple[np.ndarray, list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
+        """解を更新
+
+        Args:
+            x (np.ndarray): 候補解
+            s (np.ndarray, optional): 書籍参照。1反復計算目はNone。
+            y (np.ndarray, optional): 書籍参照。1反復計算目はNone。
+            c (np.ndarray, optional): 書籍参照。1反復計算目はNone。
+
+        Returns:
+            tuple[np.ndarray, list[np.ndarray], list[np.ndarray], list[np.ndarray]]: 更新結果
+        """
         g = self.grad(x)
         if s is None:
             x_new = x - self.alpha*g
@@ -129,3 +156,42 @@ class LBFGS(BFGS):
             if len(y) > self.m:
                 y = y[1:]; s = s[1:]; c = c[1:]
             return x_new, s, y, c
+
+
+class Momentum(SteepestGradientDescent):
+    """Momentum法
+
+    Attributes:
+        objective (list[Function]): 目的関数のリスト。
+        objective_w (np.ndarray): 各目的関数の重み。
+        penalty (list[PenaltyFunction]): ペナルティ関数のリスト。Noneの場合制約なし最適化。
+        penalty_w (np.ndarray): 各ペナルティ関数の重み。
+        eta (float): 速度緩和係数。
+        alpha (float): 緩和係数。
+    """
+    def __init__(self,
+                objective:list[Function],
+                objective_w:np.ndarray = np.ones(1),
+                penalty:list[PenaltyFunction] = None,
+                penalty_w:np.ndarray = None,
+                eta:float = 0.9,
+                alpha:float = 1.)->None:
+        super().__init__(objective, objective_w, penalty, penalty_w)
+        self.alpha = alpha
+        self.eta = eta
+    
+    def step(self, x:np.ndarray, v:np.ndarray = None)->tuple[np.ndarray]:
+        """解の更新
+
+        Args:
+            x (np.ndarray): 候補解
+            v (np.ndarray, optional): 速度。1反復計算目はゼロ。
+        Returns:
+            tuple[np.ndarray]: 新しい候補解と新しい速度
+        """
+        if v is None: v = np.zeros(len(x))
+        g = self.grad(x)
+        v_new = self.eta*v - self.alpha*g
+
+        x_new = x + v_new
+        return x_new, v
